@@ -59,12 +59,81 @@ router.post('/', async (req, res) => {
 });
 
 // Get a specific car by ID
-router.get('/:id', async (req, res) => {});
+router.get('/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const car = await dbConnection('cars').where({ id });
+
+    if (car) {
+      res.status(200).json(car);
+    } else {
+      res
+        .status(404)
+        .json({ message: `Car with the id of ${id} was not found.` });
+    }
+  } catch (err) {
+    res.status(500).json({ message: `Failed to retrieve car of id ${id}.` });
+  }
+});
 
 // Delete a car
-router.delete('/:id', async (req, res) => {});
+router.delete('/:id', async (req, res) => {
+  try {
+    const {
+      params: { id },
+    } = req;
+
+    const successFlag = await dbConnection('cars')
+      .where({ id })
+      .del();
+    if (successFlag > 0) {
+      res.status(200).json({ message: 'The car was removed successfully.' });
+    } else {
+      res.status(404).json({ message: 'The car could not be found.' });
+    }
+  } catch (error) {
+    res.status(500).json({ error });
+  }
+});
 
 // Update a car
-router.put('/:id', async (req, res) => {});
+router.put('/:id', async (req, res) => {
+  try {
+    const {
+      params: { id },
+      body,
+      body: { VIN, make, model, mileage, transmissionType, titleStatus },
+    } = req;
+
+    if (Object.entries(body).length === 0 && body.constructor === Object) {
+      res.status(400).json({ message: 'No car data was provided.' });
+    }
+
+    const successFlag = await dbConnection('cars')
+      .where({ id })
+      .update({
+        VIN: VIN,
+        make: make,
+        model: model,
+        mileage: mileage,
+        transmissionType: transmissionType,
+        titleStatus: titleStatus,
+      });
+    if (successFlag > 0) {
+      res
+        .status(200)
+        .json({ message: `The car with the id ${id} was updated` });
+    } else {
+      res.status(400).json({
+        message: `The provided data to update a car with the id ${id} were not well formed.`,
+      });
+    }
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({
+      message: `There was an error updating the car with the id ${id}`,
+    });
+  }
+});
 
 module.exports = router;
